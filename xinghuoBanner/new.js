@@ -56,7 +56,11 @@ export default class XinghuoBanner {
         this.slideEnd =
             params.slideCallback ||
             function (index) {
-                // console.log("当前索引 >>", index);
+                if (this.banner_maidian_list.indexOf(index) == -1) {
+                    console.log("当前索引 >>", index, this.banner_maidian_list);
+                    this.banner_maidian_list.push(index)
+                }
+
             };
         /**
          * 组件节点
@@ -95,10 +99,10 @@ export default class XinghuoBanner {
         this.interval = 3000;
         /** 过渡时间（毫秒）默认 300 */
         this.moveTime = 300;
+        /** 初始曝光数组 */
+        this.banner_maidian_list = []
         /** 初始 */
-        this.test = function () {
-            console.log(test);
-        }
+
         this.init();
     }
 
@@ -127,6 +131,9 @@ export default class XinghuoBanner {
         this._className = '.' + className
         this.terminal = terminal()
         this.createList(className, this._params);
+        this.maidian({
+            spm_value: '123'
+        })
     }
 
     /**
@@ -141,7 +148,7 @@ export default class XinghuoBanner {
         if (!page) return console.warn("没有可执行的DOM！");
         let itemList = "";
         for (let i = 0; i < starFire.bannerList.length; i++) {
-            itemList += `<div class="swiper_item" onclick=test() style="width:${starFire.width};height:${starFire.height};background: url(${starFire.bannerList[i].picUrl})no-repeat center / 100% 100%;float: left;  text-align: center;"></div>`;
+            itemList += `<div class="swiper_item"  style="width:${starFire.width};height:${starFire.height};background: url(${starFire.bannerList[i].picUrl})no-repeat center / 100% 100%;float: left;  text-align: center;"></div>`;
         }
         let component = `<div class="swiper ${className}"  style='position: relative; overflow: hidden;'>
                           <div class="swiper_list" style='overflow: hidden; position: relative;  width: 100%;  height: 100%;  transition: 0s all;'>${itemList}</div>
@@ -200,12 +207,31 @@ export default class XinghuoBanner {
         console.log(moveWidth, moveHeight);
         // 添加点击事件
         console.log(`点击事件`, this.node);
-        // this.node.onclick = function (e) {
-        //     console.log(e, window.event);
-        //     var ev = e || window.event;
-        //     var target = ev.target || ev.srcElement;
-        //     console.log(ev, target);
-        // }
+        this.node.onclick = (e) => {
+            const index = this.index
+            const item = this._params.bannerList[index]
+            const json = {
+                spm_value: item.spm || "",
+                action: "1",
+                events: {
+                    ad_idea_id: item.ideaId,
+                    ad_unit_id: item.sceneCode,
+                    source_url: item.ideaUrl
+                        ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink || ""
+                        : "",
+                    ad_spm_value: item.spm,
+                },
+                other: {
+                    ad_idea_id: item.ideaId,
+                    ad_unit_id: item.sceneCode,
+                    source_url: item.ideaUrl
+                        ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink || ""
+                        : "",
+                    site_id: index + 1,
+                },
+            };
+            this.maidian(json)
+        }
 
         //根据传入bannerlist长度判断是否展示圆点
         if (this.pagination) this.outputPagination();
@@ -520,9 +546,6 @@ export default class XinghuoBanner {
         }
     }
 
-    test() {
-        // console.log('test');
-    }
     /** 自动播放移动 */
     autoMove() {
         // 这里判断 loop 的自动播放
@@ -543,6 +566,37 @@ export default class XinghuoBanner {
         }
         // console.log(321);
         this.slideEnd(this.index);
+    }
+    maidian(data = {}) {
+        console.log(this);
+        const {
+            env,
+            projectType,
+            appId = '',
+            appVerion = '',
+            uid,
+            channel = 'self',
+            channel2 = '',
+            tenantCode = '',
+            portraitCode = '',
+        } = this._params;
+
+        const json = {
+            ...data,
+            // 必传参数
+            env,
+            projectType,
+            appId,
+            appVerion,
+            uid,
+            channel,
+            // 非必填参数
+            channel2,
+            tenantCode,
+            portraitCode,
+        };
+        console.log("埋点数据*****", json);
+        Service.LOG(json);
     }
 
     destroy() {
