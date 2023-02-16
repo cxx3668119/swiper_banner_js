@@ -1,5 +1,10 @@
+
+
+// var JSElement = document.createElement("script");
+// JSElement.setAttribute("src", "https://xiaojinhe-cdn.iyoudui.cn/libs/hx-sdk/h5/index.js");
+// document.body.appendChild(JSElement);
 import Service from './fetch.js'
-import { terminal } from './utils/common.js';
+import { terminal, turnPage } from './utils/common.js';
 /**
  * 轮播组件
  * @param {object} params 配置传参
@@ -11,29 +16,19 @@ import { terminal } from './utils/common.js';
  * @param {boolean} params.autoPaly 是否需要自动播放
  * @param {boolean} params.pagination 是否需要底部圆点
  * @param {(index: number) => void} params.slideCallback 滑动/切换结束回调
- * @param {boolean} params.projectType 星火请求、上报的地址会根据业务线的不同而改变
- * @param {boolean} params.env 所属环境
- * @param {boolean} params.uid 支付宝uid
- * @param {boolean} params.appId appId
- * @param {boolean} params.channel 埋点渠道
- * @param {boolean} params.width banner宽度
- * @param {boolean} params.height banner高度
+ * @param {string} params.projectType 星火请求、上报的地址会根据业务线的不同而改变
+ * @param {string} params.env 所属环境
+ * @param {string} params.uid 支付宝uid
+ * @param {string} params.appId appId
+ * @param {string} params.channel 埋点渠道
+ * @param {string} params.width banner宽度
+ * @param {string} params.height banner高度
  * @param {() => void} params.onBannerClickProps banner点击事件回调
  * @param {() => void} params.onBannerVisitProps banner每帧曝光事件回调
  * @param {() => void} params.onJumpOut banner点击跳转方法，参数url和当前帧item
  */
 /**
  * 优化List
- * 1.用class写✅
- * 2.元素用el✅
- * 3.参数就不要加前缀了✅
- * 4.星火统一用拼音把✅
- * 5.再创建一个默认css文件。可覆盖✅
- * 6.参数字段跟插件对齐
- * 7.暴露一个destroy方法出去
- * 8.最后考虑rem的问题，如果是style绑定的px
- * 9.参数尽量多一些，然后给默认值，大部分非必传就行
- * 10.都纯js了，最好再用rollup打包下，umd格式的放到cdn上直接用
  */
 export default class XinghuoBanner {
     constructor(el, params) {
@@ -57,7 +52,25 @@ export default class XinghuoBanner {
             params.slideCallback ||
             function (index) {
                 if (this.banner_maidian_list.indexOf(index) == -1) {
-                    console.log("当前索引 >>", index, this.banner_maidian_list);
+                    const index = this.index
+                    const item = this._params.bannerList[index]
+                    // console.log("当前索引 >>", index, this.banner_maidian_list);
+
+                    const json = {
+                        action: "3",
+                        spm_value: this._params.mdValue || item.spm || "",
+                        events: {
+                            ad_exposure: {
+                                ad_unit_id: item.sceneCode,
+                                ad_idea_id: item.ideaId,
+                                ad_spm_value: item.spm,
+                                source_url: item.ideaUrl
+                                    ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink || ""
+                                    : "",
+                            },
+                        },
+                    }
+                    hx.log(json)
                     this.banner_maidian_list.push(index)
                 }
 
@@ -108,32 +121,73 @@ export default class XinghuoBanner {
 
     async init() {
         //test 获取星火
-        const { env, projectType, uid } = this._params
+        this.terminal = terminal()
+        console.log(`banner`, window.hx);
+        if (!window.hx) return console.warn("请先引入hx-sdk");
+        if (!this._params.bannerList && !this._params.xhBannerZWM) return console.warn("banner信息缺失");
+        // if (!this._params.bannerList) return console.warn("bannerList为空！");
+        // if (!this._params.width) return console.warn("参数width异常");
+        // if (!this._params.height) return console.warn("参数height异常");
+        if (!this._params.appId) return console.warn("参数appId异常");
+        if (!this._params.env) return console.warn("参数env异常");
+        if (!this._params.projectType) return console.warn("参数projectType异常");
+        // if (!this._params.xhBannerZWM) return console.warn("参数bannerCode异常");
+        const { env, projectType, uid, xhBannerZWM } = this._params
         const params = {
             env,
             channel: 'test',
             projectType,
-            sceneGroupCode: 'UVEB4EARVQ2Q',
+            sceneGroupCode: xhBannerZWM,
             userId: uid,
             receiptType: "SERVICE_C_0101",
             terminal: this.terminal
         }
-        const data = await Service.QUERY_STAR_FIRE_CONF(params)
-        console.log(data);
-        this._params.bannerList = data.data['UVEB4EARVQ2Q']
-        if (!this._params.bannerList) return console.warn("bannerList为空！");
-        if (!this._params.width) return console.warn("参数width异常");
-        if (!this._params.height) return console.warn("参数height异常");
-        if (!this._params.appId) return console.warn("参数appId异常");
-        if (!this._params.env) return console.warn("参数env异常");
-        if (!this._params.projectType) return console.warn("参数projectType异常");
+        // 获取bannerList
+        if (!this._params.bannerList) {
+            const data = await Service.QUERY_STAR_FIRE_CONF(params)
+            if (data.code === '10000') {
+                this._params.bannerList = data.data[xhBannerZWM]
+            }
+        }
+        // 第一帧曝光
+        if (this._params.bannerList.length) {
+            const list = this._params.bannerList
+            const index = 0
+            const item = list[index]
+            if (this._params.onBannerVisitProps) {
+                console.log(this._params.onBannerVisitProps);
+                console.log(item);
+                console.log(index);
+                this._params.onBannerVisitProps(item, index)
+            } else {
+                const json = {
+                    action: "3",
+                    spm_value: this._params.mdValue || item.spm || "",
+                    events: {
+                        ad_exposure: {
+                            ad_unit_id: item.sceneCode,
+                            ad_idea_id: item.ideaId,
+                            ad_spm_value: item.spm,
+                            source_url: item.ideaUrl
+                                ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink || ""
+                                : "",
+                        },
+                    },
+                }
+                hx.log(json)
+            }
+            console.log(321);
+
+            this.banner_maidian_list.push(0)
+        }
+
+
+
+        this._params.width = '100%'
+        this._params.height = '100%'
         const className = "swiper_" + Date.now().toString();
         this._className = '.' + className
-        this.terminal = terminal()
         this.createList(className, this._params);
-        this.maidian({
-            spm_value: '123'
-        })
     }
 
     /**
@@ -141,8 +195,6 @@ export default class XinghuoBanner {
      * @param {string} className
      */
     createList(className = "", starFire) {
-        console.log("=> new banner");
-        console.log(starFire);
         /** 页面容器节点 */
         const page = this.$el
         if (!page) return console.warn("没有可执行的DOM！");
@@ -165,7 +217,6 @@ export default class XinghuoBanner {
         // page.style.width = starFire.width
         // page.style.height = starFire.height
         // => 曝光卖点
-        console.log('曝光1');
 
         // =>下一步初始化
         this.initParams(className = "");
@@ -176,7 +227,6 @@ export default class XinghuoBanner {
         const params = this._params
         const outputPaginationparams = this._params
         if (typeof params !== "object") return console.warn("传参有误");
-        console.log('****123', params.bannerList);
         //pagination，autoPaly，isLoop <= bannerList
         this.pagination = params.bannerList.length == 1 ? false : true;
         this.direction = params.vertical || false;
@@ -200,37 +250,37 @@ export default class XinghuoBanner {
         this.nodeItems = [...this.node.querySelectorAll(this.classNames[1])];
         if (this.nodeItems.length == 0) return console.warn("滑动节点个数必须大于0！");
         //获取元素宽高
-        console.log(this.node);
         this.node.style.width = params.width
         this.node.style.height = params.height
         const moveWidth = this.node.offsetWidth, moveHeight = this.node.offsetHeight;
-        console.log(moveWidth, moveHeight);
         // 添加点击事件
-        console.log(`点击事件`, this.node);
         this.node.onclick = (e) => {
             const index = this.index
             const item = this._params.bannerList[index]
-            const json = {
-                spm_value: item.spm || "",
-                action: "1",
+            let json = {
+                action: '1',
+                spm_value: this._params.mdValue || item.spm || "",
                 events: {
-                    ad_idea_id: item.ideaId,
-                    ad_unit_id: item.sceneCode,
-                    source_url: item.ideaUrl
-                        ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink || ""
-                        : "",
-                    ad_spm_value: item.spm,
-                },
-                other: {
-                    ad_idea_id: item.ideaId,
-                    ad_unit_id: item.sceneCode,
-                    source_url: item.ideaUrl
-                        ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink || ""
-                        : "",
-                    site_id: index + 1,
+                    ad_click: {
+                        ad_unit_id: item.sceneCode,
+                        ad_idea_id: item.ideaId,
+                        ad_spm_value: item.spm,
+                        source_url: item.ideaUrl
+                            ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink || ""
+                            : "",
+                    },
                 },
             };
-            this.maidian(json)
+            hx.log(json)
+            // 跳转 各个小程序的跳转方法不一样 注意
+            const url = item.ideaUrl
+                ? item.ideaUrl.viewUrl || item.ideaUrl.originalLink
+                : "";
+            if (this.onJumpOut) {
+                this.onJumpOut(url, item);
+                return;
+            }
+            turnPage(url);
         }
 
         //根据传入bannerlist长度判断是否展示圆点
@@ -564,11 +614,9 @@ export default class XinghuoBanner {
                 this.moveDistance -= this.range;
             }
         }
-        // console.log(321);
         this.slideEnd(this.index);
     }
     maidian(data = {}) {
-        console.log(this);
         const {
             env,
             projectType,
@@ -595,7 +643,6 @@ export default class XinghuoBanner {
             tenantCode,
             portraitCode,
         };
-        console.log("埋点数据*****", json);
         Service.LOG(json);
     }
 
@@ -603,5 +650,7 @@ export default class XinghuoBanner {
         // 系统自动回收
     }
 }
+
+
 
 

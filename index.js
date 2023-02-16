@@ -413,7 +413,7 @@ function starFireSwiper(params) {
         if (!nodePagination) {
             nodePagination = document.createElement("div");
             nodePagination.className = classNames[2].slice(1);
-            console.log(node);
+            // console.log(node);
             node.appendChild(nodePagination);
             nodePagination.style.position = 'absolute'
             nodePagination.style.width = '100%'
@@ -435,7 +435,7 @@ function starFireSwiper(params) {
 
     /** 初始化动态布局 */
     function initLayout() {
-        console.log(params.el);
+        // console.log(params.el);
         node = document.querySelector(params.el);
         if (!node) return console.warn("没有可执行的节点！");
         node.style.height = '600px'
@@ -446,12 +446,12 @@ function starFireSwiper(params) {
         nodeItems = [...node.querySelectorAll(classNames[1])];
         if (nodeItems.length == 0) return console.warn("滑动节点个数必须大于0！");
         //获取元素宽高
-        console.log(node);
+        // console.log(node);
         node.style.width = params.starFireWidth
         node.style.height = params.starFireHeight
         const moveWidth = node.offsetWidth, moveHeight = node.offsetHeight;
 
-        console.log(moveWidth, moveHeight);
+        // console.log(moveWidth, moveHeight);
         //根据传入bannerlist长度判断是否展示圆点
         if (pagination) outputPagination();
         //如果多帧滚动的话 需要回路 传入滚动容器宽高
@@ -463,7 +463,7 @@ function starFireSwiper(params) {
     /** 初始化参数 */
     function initParams() {
         if (typeof params !== "object") return console.warn("传参有误");
-        console.log('****123', params.bannerList);
+        // console.log('****123', params.bannerList);
         //pagination，autoPaly，isLoop <= bannerList
         pagination = params.bannerList.length == 1 ? false : true;
         direction = params.vertical || false;

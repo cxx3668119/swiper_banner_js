@@ -1,3 +1,4 @@
+// import XinghuoBanner from "./dist/banner.esm.js";
 import XinghuoBanner from "./new.js";
 let bannerList1 = [
     {
@@ -53,17 +54,34 @@ let bannerList1 = [
     }
 ];
 new XinghuoBanner('.banner', {
-    bannerList: bannerList1,
-    width: '100%',
-    height: '100%',
-    pagination: true,
-    autoPaly: true,
-    loop: true,
-    interval: 3000,
-    moveTime: 300,
+    // bannerList: bannerList1,
     appId: "1123",
     uid: "2088612045761071",
     env: "test",
     projectType: "dx",
+    channel: 'dx',
+    // onBannerClickProps: () => console.log(1),
+    // onBannerVisitProps: (item, index) => console.log(item, index),
+    // onJumpOut: () => console.log(3),
+    xhBannerZWM: '0JFMLVX2T4B5',
+    mdValue: 'aST20230203175528871.p1.m6.b1'
 })
+
+
+// new XinghuoBanner('.banner', {
+//     bannerList: bannerList1,
+//     width: '100%',
+//     height: '100%',
+//     pagination: true,
+//     autoPaly: true,
+//     loop: true,
+//     interval: 3000,
+//     moveTime: 300,
+//     appId: "1123",
+//     uid: "2088612045761071",
+//     env: "test",
+//     projectType: "dx",
+//     channel: 'dx',
+//     bannerCode: 'UVEB4EARVQ2Q'
+// })
 
